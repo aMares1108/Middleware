@@ -8,24 +8,44 @@ const assert = require('assert');
 var express = require('express') //llamamos a Express
 var app = express();
 
-const uri = "mongodb+srv://Gabriel:MeinKampf28@cluster-sd.uhhmbgs.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env['MONGOUSER']}:${process.env['MONGOPASS']}@cluster-sd.uhhmbgs.mongodb.net/?retryWrites=true&w=majority`;
 
+app.get('/:id', async function(req, res) {
 
-app.get('/get', function(req, res) {
-  res.json({ mensaje: '¡Hola Mundo!' })
+  const client = new MongoClient(uri);
+  const database = client.db("Starlink-MW");
+  const multimedia = database.collection("Multimedia");
+    try {
+        // Connect to the MongoDB cluster
+         await client.connect();
+
+        // Make the appropriate DB calls
+
+        res.json({document: await get_id(multimedia,req.params.id)}) ;
+
+    } catch (e) {
+        //console.error(e);
+        res.json({ ERROR: e})
+    } finally {
+        await client.close();
+    }
 })
 
 app.put('/put', function(req, res) {
-  res.json({ mensaje: 'Método delete' })  
+  res.json({ mensaje: 'Método delete' })
 })
 
 app.post('/post', function(req, res) {
-  res.json({ mensaje: 'Método post' })   
+  res.json({ mensaje: 'Método post' })
 })
 
 app.delete('/del', function(req, res) {
-  res.json({ mensaje: 'Método delete' })  
+  res.json({ mensaje: 'Método delete' })
 })
+
+app.listen(3000, () => {
+  console.log('server started');
+});
 
 async function get(multimedia) {
   try {
@@ -47,11 +67,11 @@ async function get(multimedia) {
 }
 
 function iterateFunc(doc) {
-   console.log(JSON.stringify(doc, null, 4));
+  console.log(JSON.stringify(doc, null, 4));
 }
 
 function errorFunc(error) {
-   console.log(error);
+  console.log(error);
 }
 
 async function get_id(multimedia, id) {
@@ -69,11 +89,12 @@ async function get_id(multimedia, id) {
     });
 
     if (result) {
-        console.log(`Found a listing in the collection with the name '${id}':`);
-        console.log(result);
+      console.log(`Found a listing in the collection with the name '${id}':`);
+      console.log(result);
+      return result;
 
     } else {
-        console.log(`No listings found with the name '${id}'`);
+      console.log(`No listings found with the name '${id}'`);
     }
   } finally {
     //await client.close();
@@ -81,7 +102,7 @@ async function get_id(multimedia, id) {
 }
 
 async function post(multimedia, doc) {
- try {
+  try {
     // create a document to insert
     /*const doc = {
       name: "Cerveza",
@@ -90,7 +111,7 @@ async function post(multimedia, doc) {
     const result = await multimedia.insertOne(doc);
 
     console.log(`A document was inserted with the _id: ${result.insertedId}`);
-   get_id(multimedia,doc.ID_archivo);
+    get_id(multimedia, doc.ID_archivo);
   } finally {
     //await client.close();
   }
@@ -124,7 +145,7 @@ async function update(multimedia, id, update_params) {
 
     // create a document 
     const updateDoc = {
-      $set: 
+      $set:
         update_params
       ,
     };
@@ -133,41 +154,41 @@ async function update(multimedia, id, update_params) {
     console.log(
       `${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`,
     );
-    get_id(multimedia,id);
+    get_id(multimedia, id);
   } finally {
     //await client.close();
   }
 }
 
-async function run() {
-  const client = new MongoClient(uri);
+/*async function run() {
+  
   try {
+
     
-    const database = client.db("Starlink-MW");
-    const multimedia = database.collection("Multimedia");
     client.connect();
-    
-    await get(multimedia);
-    await get_id(multimedia, 'bafybeiaysi4s6lnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze');
-    
-    let document = {"Dialecto":"Tzotzil",
-      "Tipo_de_archivo":".pdf",
-      "Descripcion":{"Espaniol":"Hola","Italiano":"ciao"},
-      "ID_archivo":"asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze",
-      "Tamanio":{"$numberInt":"10"},
-      "Usuario":"Gabriel",
-      "Fecha":"28/09/2010",
-      "Thumbnail":"https://upload.wikimedia.org/wikipedia/commons.pdf"
-      }
-    
-    await post(multimedia, document);
-    await update(multimedia, "asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze", {Dialecto: "Italiano"})
-    await del(multimedia, {"ID_archivo": "asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze"});
+
+     get(multimedia);
+     get_id(multimedia, 'bafybeiaysi4s6lnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze');
+
+    let document = {
+      "Dialecto": "Tzotzil",
+      "Tipo_de_archivo": ".pdf",
+      "Descripcion": { "Espaniol": "Hola", "Italiano": "ciao" },
+      "ID_archivo": "asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze",
+      "Tamanio": { "$numberInt": "10" },
+      "Usuario": "Gabriel",
+      "Fecha": "28/09/2010",
+      "Thumbnail": "https://upload.wikimedia.org/wikipedia/commons.pdf"
+    }
+
+     post(multimedia, document);
+     update(multimedia, "asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze", { Dialecto: "Italiano" })
+     del(multimedia, { "ID_archivo": "asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze" });
   } finally {
-    await client.close();
+     client.close();
   }
-}
-run().catch(console.dir);
+}*/
+//run().catch(console.dir);
 
 //{"Dialecto":"Tzotzil",
 //"Tipo_de_archivo":".jpg",
