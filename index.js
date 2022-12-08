@@ -5,10 +5,32 @@
 
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
-var express = require('express') //llamamos a Express
+var express = require('express'); //llamamos a Express
 var app = express();
+//var bodyParser = require('body-parser');
+
+//app.use(bodyParser.urlencoded());
+//app.use(bodyParser.json());
 
 const uri = `mongodb+srv://${process.env['MONGOUSER']}:${process.env['MONGOPASS']}@cluster-sd.uhhmbgs.mongodb.net/?retryWrites=true&w=majority`;
+
+app.get('/', async function(req, res){
+  res.json({
+    query: req.query
+  });
+})
+
+app.post('/test', (req, res) => {
+  res.json({requestBody: req.body})  // <==== req.body will be a parsed JSON object
+})
+
+app.post('/', async function(req,res){
+  console.log(req.body);
+  res.json({
+    body: req.body,
+    query: req.query
+  })
+})
 
 app.get('/:id', async function(req, res) {
 
@@ -47,6 +69,8 @@ app.listen(3000, () => {
   console.log('server started');
 });
 
+
+// Funciones
 async function get(multimedia) {
   try {
 
