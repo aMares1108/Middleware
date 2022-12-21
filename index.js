@@ -7,14 +7,14 @@ const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 var express = require('express'); //llamamos a Express
 var app = express();
-//var bodyParser = require('body-parser');
+var bodyParser = require('body-parser');
 
-//app.use(bodyParser.urlencoded());
-//app.use(bodyParser.json());
+app.use(bodyParser.urlencoded());
+app.use(bodyParser.json());
 
 const uri = `mongodb+srv://${process.env['MONGOUSER']}:${process.env['MONGOPASS']}@cluster-sd.uhhmbgs.mongodb.net/?retryWrites=true&w=majority`;
 
-app.get('/', async function(req, res){
+app.get('/test', async function(req, res){
   res.json({
     query: req.query
   });
@@ -24,12 +24,37 @@ app.post('/test', (req, res) => {
   res.json({requestBody: req.body})  // <==== req.body will be a parsed JSON object
 })
 
-app.post('/', async function(req,res){
-  console.log(req.body);
+app.delete('/test', async function(req,res){
   res.json({
     body: req.body,
     query: req.query
   })
+
+app.put('/test', async function(req,res){
+  res.json({
+    body: req.body,
+    query: req.query
+  })
+})
+
+app.get('/', async function(req, res) {
+
+  const client = new MongoClient(uri);
+  const database = client.db("Starlink-MW");
+  const multimedia = database.collection("Multimedia");
+    try {
+        // Connect to the MongoDB cluster
+         await client.connect();
+
+        // Make the appropriate DB calls
+
+        res.json({documents: await get(multimedia)}) ;
+    } catch (e) {
+        //console.error(e);
+        res.json({ ERROR: e})
+    } finally {
+        await client.close();
+    }
 })
 
 app.get('/:id', async function(req, res) {
@@ -44,6 +69,42 @@ app.get('/:id', async function(req, res) {
         // Make the appropriate DB calls
 
         res.json({document: await get_id(multimedia,req.params.id)}) ;
+    } catch (e) {
+        //console.error(e);
+        res.json({ ERROR: e})
+    } finally {
+        await client.close();
+    }
+})
+
+app.put('/put', async function(req, res) {
+  res.json({ mensaje: 'Método delete' })
+})
+
+app.post('/', async function(req, res) {
+  var doc = {
+    Dialecto: req.body.dialecto,
+    Tipo_de_archivo: req.body.archivo,
+    Descripcion:{
+      Espaniol: req.body.espaniol
+    },
+    ID_archivo: req.body.id,
+    Tamanio: parseInt(req.body.tam),
+    Usuario: req.body.user,
+    Fecha: req.body.date,
+    Thumbnail: req.body.thumb
+  };
+  doc['Descripcion'][req.body.dialecto] = req.body.descDial;
+  const client = new MongoClient(uri);
+  const database = client.db("Starlink-MW");
+  const multimedia = database.collection("Multimedia");
+    try {
+        // Connect to the MongoDB cluster
+         await client.connect();
+
+        // Make the appropriate DB calls
+
+        res.json({document: await post(multimedia,doc)}) ;
 
     } catch (e) {
         //console.error(e);
@@ -53,16 +114,26 @@ app.get('/:id', async function(req, res) {
     }
 })
 
-app.put('/put', function(req, res) {
-  res.json({ mensaje: 'Método delete' })
-})
+app.delete('/', async function(req, res) {
+  var query = {};
+  query[req.params.param] = req.params.value;
+  const client = new MongoClient(uri);
+  const database = client.db("Starlink-MW");
+  const multimedia = database.collection("Multimedia");
+    try {
+        // Connect to the MongoDB cluster
+         await client.connect();
 
-app.post('/post', function(req, res) {
-  res.json({ mensaje: 'Método post' })
-})
+        // Make the appropriate DB calls
 
-app.delete('/del', function(req, res) {
-  res.json({ mensaje: 'Método delete' })
+        res.json({document: await del(multimedia,query)}) ;
+
+    } catch (e) {
+        //console.error(e);
+        res.json({ ERROR: e})
+    } finally {
+        await client.close();
+    }
 })
 
 app.listen(3000, () => {
@@ -113,12 +184,12 @@ async function get_id(multimedia, id) {
     });
 
     if (result) {
-      console.log(`Found a listing in the collection with the name '${id}':`);
-      console.log(result);
+      //console.log(`Found a listing in the collection with the name '${id}':`);
+      //console.log(result);
       return result;
 
     } else {
-      console.log(`No listings found with the name '${id}'`);
+      return (`No listings found with the name '${id}'`);
     }
   } finally {
     //await client.close();
@@ -134,8 +205,8 @@ async function post(multimedia, doc) {
     }*/
     const result = await multimedia.insertOne(doc);
 
-    console.log(`A document was inserted with the _id: ${result.insertedId}`);
-    get_id(multimedia, doc.ID_archivo);
+    //console.log(`A document was inserted with the _id: ${result.insertedId}`);
+    return get_id(multimedia, doc.ID_archivo);
   } finally {
     //await client.close();
   }
@@ -144,14 +215,11 @@ async function post(multimedia, doc) {
 async function del(multimedia, query) {
   try {
 
-    // Query for a movie that has title "Annie Hall"
-    //const query = { name: "Refreso" };
-
     const result = await multimedia.deleteOne(query);
     if (result.deletedCount === 1) {
-      console.log("Successfully deleted one document.");
+      return("Successfully deleted one document.");
     } else {
-      console.log("No documents matched the query. Deleted 0 documents.");
+      return("No documents matched the query. Deleted 0 documents.");
     }
   } finally {
     //await client.close();
