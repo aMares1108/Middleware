@@ -29,6 +29,7 @@ app.delete('/test', async function(req,res){
     body: req.body,
     query: req.query
   })
+})
 
 app.put('/test', async function(req,res){
   res.json({
@@ -47,6 +48,7 @@ app.get('/', async function(req, res) {
          await client.connect();
 
         // Make the appropriate DB calls
+        //await multimedia.insertMany(     [{"_id":"63766bb123b230284baa64c4","Dialecto":"Tzotzil","Tipo_de_archivo":".jpg","Descripcion":{"Espaniol":"Adios","Tzotzil":"banmeabi"},"ID_archivo":"bafybeiaysi4s6lnjev27ln5icwm6tueaw2vdykrtj","Tamanio":3,"Usuario":"Mares","Fecha":"23/09/2020","Thumbnail":"https://alertachiapas.com/wp-content/uploads/2017/11/WhatsApp-Image-2017-11-08-at-5.33.20-PM.jpeg"},{"_id":"637fa5b04604ed09503eb49c","Dialecto":"Tzotzil","Tipo_de_archivo":".pdf","Descripcion":{"Espaniol":"Hola","Italiano":"ciao"},"ID_archivo":"asdfaiuyhcbdulnjev27ln5icwm6tueaw2vdykrtjkwiphwekaywqhcjze","Tamanio":{"$numberInt":"10"},"Usuario":"Gabriel","Fecha":"28/09/2010","Thumbnail":"https://upload.wikimedia.org/wikipedia/commons.pdf"},{"_id":"63a30eba67d8c3b6014ae256","Dialecto":"Maya","Tipo_de_archivo":".jpg","Descripcion":{"Espaniol":"adios","Maya":"tak ti' uláak' k 'iin"},"ID_archivo":"ahbcsio8eyr7fjmvfwoi48hnfriwfefyb7v","Tamanio":9,"Usuario":"Mares","Fecha":"21/12/2022","Thumbnail":"https://alertachiapas.com/wp-content/uploads/2017/11/WhatsApp-Image-2017-11-08-at-5.33.20-PM.jpeg"},{"_id":"63a30f481119ba64be6beb44","Dialecto":"Maya","Tipo_de_archivo":".jpg","Descripcion":{"Espaniol":"adios","Maya":"tak ti' uláak' k 'iin"},"ID_archivo":"ahbcsio8eyr7fjmvfwoi48hnfriwfefyb7v","Tamanio":9,"Usuario":"Mares","Fecha":"21/12/2022","Thumbnail":"https://alertachiapas.com/wp-content/uploads/2017/11/WhatsApp-Image-2017-11-08-at-5.33.20-PM.jpeg"},{"_id":"63a30fa39df0df373fea93cb","Dialecto":"Maya","Tipo_de_archivo":".jpg","Descripcion":{"Espaniol":"adios","Maya":"tak ti' uláak' k 'iin"},"ID_archivo":"ahbcsio8eyr7fjmvfwoi48hnfriwfefyb7v","Tamanio":9,"Usuario":"Mares","Fecha":"21/12/2022","Thumbnail":"https://alertachiapas.com/wp-content/uploads/2017/11/WhatsApp-Image-2017-11-08-at-5.33.20-PM.jpeg"}])
 
         res.json({documents: await get(multimedia)}) ;
     } catch (e) {
@@ -77,8 +79,24 @@ app.get('/:id', async function(req, res) {
     }
 })
 
-app.put('/put', async function(req, res) {
-  res.json({ mensaje: 'Método delete' })
+app.put('/:id', async function(req, res) {
+  const client = new MongoClient(uri);
+  const database = client.db("Starlink-MW");
+  const multimedia = database.collection("Multimedia");
+    try {
+        // Connect to the MongoDB cluster
+         await client.connect();
+
+        // Make the appropriate DB calls
+
+        res.json({document: await update(multimedia,req.params.id,req.body)}) ;
+
+    } catch (e) {
+        //console.error(e);
+        res.json({ ERROR: e})
+    } finally {
+        await client.close();
+    }
 })
 
 app.post('/', async function(req, res) {
@@ -116,7 +134,7 @@ app.post('/', async function(req, res) {
 
 app.delete('/', async function(req, res) {
   var query = {};
-  query[req.params.param] = req.params.value;
+  query[req.query.param] = req.body.value;
   const client = new MongoClient(uri);
   const database = client.db("Starlink-MW");
   const multimedia = database.collection("Multimedia");
@@ -153,9 +171,10 @@ async function get(multimedia) {
     };
 
     const cursor = await multimedia.find();
-
+    return cursor.toArray();
     // replace console.dir with your callback to access individual elements
-    await cursor.forEach(console.dir);
+    //await cursor.forEach(console.dir);
+    
   } finally {
     //await client.close();
   }
@@ -214,7 +233,7 @@ async function post(multimedia, doc) {
 
 async function del(multimedia, query) {
   try {
-
+    console.log(query);
     const result = await multimedia.deleteOne(query);
     if (result.deletedCount === 1) {
       return("Successfully deleted one document.");
@@ -243,8 +262,8 @@ async function update(multimedia, id, update_params) {
     };
 
     const result = await multimedia.updateOne(filter, updateDoc, options);
-    console.log(
-      `${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`,
+    return(
+      `${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`
     );
     get_id(multimedia, id);
   } finally {
